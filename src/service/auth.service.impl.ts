@@ -94,4 +94,27 @@ export class AuthService implements IAuthService {
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
+
+  async logout(refreshToken: string): Promise<void> {
+    const jwtService = JwtService.getInstance();
+    const decoded = await jwtService.verifyRefreshToken(refreshToken);
+
+    if (!decoded || typeof decoded !== "object") {
+      throw new Error('Invalid refresh token');
+    }
+
+    const tokenPayload = decoded as { email?: string; sub?: string };
+    const email = tokenPayload.email || tokenPayload.sub;
+    if (!email) {
+      throw new Error('Invalid refresh token');
+    }
+
+    const refreshKey = `refresh_token:${email}`;
+    const storedToken = await redisClient.get(refreshKey);
+    if (!storedToken || storedToken !== refreshToken) {
+      throw new Error('Invalid refresh token');
+    }
+
+    await redisClient.del(refreshKey);
+  }
 }
