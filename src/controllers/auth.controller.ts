@@ -71,4 +71,26 @@ export class AuthController {
       res.status(401).json({ message: "Invalid refresh token" });
     }
   }
+
+  async logout(req: Request, res: Response) {
+    try {
+      const result = RefreshTokenDto.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid refresh token", errors: result.error });
+      }
+
+      await this.authService.logout(result.data.refreshToken);
+
+      const response = new BaseResponse<null>()
+        .setResponse(200)
+        .setMessage("Logout successful")
+        .setSuccess(true)
+        .setData(null)
+        .build();
+
+      res.status(200).json(response);
+    } catch (error) {
+      res.status(401).json({ message: "Invalid refresh token" });
+    }
+  }
 }
