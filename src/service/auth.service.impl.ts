@@ -30,7 +30,10 @@ export class AuthService implements IAuthService {
       throw new Error('Invalid email or password');
     }
 
+    const userId = (existingUser as any)._id?.toString?.() || existingUser.email;
+
     const jwtPayLoad = {
+      userId,
       email: existingUser.email,
       rule: existingUser.rule,
       sub: existingUser.email
@@ -59,8 +62,10 @@ export class AuthService implements IAuthService {
       throw new Error('Invalid refresh token');
     }
 
-    const tokenPayload = decoded as { email?: string; sub?: string; rule?: string };
+    const tokenPayload = decoded as { userId?: string; email?: string; sub?: string; rule?: string };
     const email = tokenPayload.email || tokenPayload.sub;
+    const userId = tokenPayload.userId;
+
     if (!email) {
       throw new Error('Invalid refresh token');
     }
@@ -77,6 +82,7 @@ export class AuthService implements IAuthService {
     }
 
     const jwtPayLoad = {
+      userId: (existingUser as any)._id?.toString(),
       email: existingUser.email,
       rule: existingUser.rule,
       sub: existingUser.email
