@@ -8,6 +8,7 @@ export const userSchema = new Schema({
     rule: { type: String, default: 'user' },
     avatar_url: { type: String, default: '', required: false },
     isActive: { type: Boolean, default: true },
+    currentMatchId: { type: Schema.Types.ObjectId, ref: "Match", required: false },
     created: {
         time: { type: Date, default: Date.now }
     },
