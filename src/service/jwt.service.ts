@@ -1,5 +1,14 @@
 import jwt from "jsonwebtoken";
 
+export interface JwtPayload {
+  userId?: string;
+  email?: string;
+  rule?: string;
+  sub?: string;
+  iat?: number;
+  exp?: number;
+}
+
 const secretKey = process.env.JWT_SECRET_KEY as string;
 const refreshSecretKey = process.env.JWT_REFRESH_SECRET_KEY || secretKey;
 const accessTokenExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN || "1h";
@@ -42,31 +51,31 @@ export class JwtService {
   }
   constructor() {}
 
-  async issueAccessToken(payload: object): Promise<string> {
+  async issueAccessToken(payload: JwtPayload): Promise<string> {
     const expiresIn = accessTokenExpiresIn as jwt.SignOptions["expiresIn"];
     const token = jwt.sign(payload, secretKey, { expiresIn });
     return token;
   }
 
-  async issueRefreshToken(payload: object): Promise<string> {
+  async issueRefreshToken(payload: JwtPayload): Promise<string> {
     const expiresIn = refreshTokenExpiresIn as jwt.SignOptions["expiresIn"];
     const token = jwt.sign(payload, refreshSecretKey, { expiresIn });
     return token;
   }
 
-  async verifyAccessToken(token: string): Promise<object | null> {
+  async verifyAccessToken(token: string): Promise<JwtPayload | null> {
     try {
       const decoded = jwt.verify(token, secretKey);
-      return decoded as object;
+      return decoded as JwtPayload;
     } catch (error) {
       return null;
     }
   }
 
-  async verifyRefreshToken(token: string): Promise<object | null> {
+  async verifyRefreshToken(token: string): Promise<JwtPayload | null> {
     try {
       const decoded = jwt.verify(token, refreshSecretKey);
-      return decoded as object;
+      return decoded as JwtPayload;
     } catch (error) {
       return null;
     }

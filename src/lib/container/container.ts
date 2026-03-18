@@ -5,6 +5,7 @@ import { UserService } from '../../service/user.service.impl';
 import { AuthService } from '../../service/auth.service.impl';
 import { IUserService } from '../../service/user.service.interface';
 import { IAuthService } from '../../service/auth.service.interface';
+import { UserController } from '../../controllers/user.controller';
 
 class Container {
   private static instance: Container;
@@ -30,6 +31,9 @@ class Container {
     this.services.set('AuthController', userController);
     const authController = new AuthController(authService);
     this.services.set('AuthController', authController);
+
+    const userControllerInstance = new UserController(userService);
+    this.services.set('UserController', userControllerInstance);
   }
 
   static getInstance(): Container {

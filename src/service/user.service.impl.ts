@@ -16,4 +16,9 @@ export class UserService implements IUserRepository {
   async getUserByEmail(email: string): Promise<User | null> {
     return await this.userRepository.getUserByEmail(email);
   }
+
+  async getUserById(id: string, projection?: string): Promise<User | null> {
+    return await this.userRepository.getUserById(id, projection);
+  }
+  
 }
