@@ -7,6 +7,8 @@ import bcrypt from 'bcrypt';
 import { JwtService } from './jwt.service';
 import { redisClient } from '../lib/redis';
 
+type UserWithId = User & { _id?: { toString(): string } };
+
 export class AuthService implements IAuthService {
   private readonly userService: IUserService;
 
@@ -30,7 +32,8 @@ export class AuthService implements IAuthService {
       throw new Error('Invalid email or password');
     }
 
-    const userId = (existingUser as any)._id?.toString?.() || existingUser.email;
+    const existingUserWithId = existingUser as UserWithId;
+    const userId = existingUserWithId._id?.toString?.() || existingUser.email;
 
     const jwtPayLoad = {
       userId,
@@ -81,8 +84,9 @@ export class AuthService implements IAuthService {
       throw new Error('User not found');
     }
 
+    const existingUserWithId = existingUser as UserWithId;
     const jwtPayLoad = {
-      userId: (existingUser as any)._id?.toString(),
+      userId: existingUserWithId._id?.toString(),
       email: existingUser.email,
       rule: existingUser.rule,
       sub: existingUser.email

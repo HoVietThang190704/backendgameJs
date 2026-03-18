@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import z from "zod";
 import { User } from "../model/user";
 
@@ -9,6 +10,7 @@ export const createUserDto = z.object({
     rule: z.string().max(50).default('user'),
     avatar_url: z.string().url().optional(),
     isActive: z.boolean().default(true),
+    currentMatchId: z.instanceof(Types.ObjectId).optional(),
     created: z.object({
         time: z.date().default(new Date())
     }).optional(),

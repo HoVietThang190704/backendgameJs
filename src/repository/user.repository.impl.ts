@@ -18,5 +18,8 @@ export class UserRepository implements IUserRepository {
     const finalProjection = projection ? projection : { password: 0 };
     return await UserModel.findOne({_id: id}, finalProjection);
   }
-  
+
+  async setCurrentMatch(userId: string, matchId: string | null): Promise<void> {
+    await UserModel.findByIdAndUpdate(userId, { currentMatchId: matchId });
+  }
 }
