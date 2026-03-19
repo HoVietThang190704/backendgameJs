@@ -24,6 +24,84 @@ export class MatchService implements IMatchService {
     return this.matchRepository.findActiveMatchByUserId(userId);
   }
 
+  async getMatchById(matchId: string): Promise<MatchDocument | null> {
+    return this.matchRepository.findMatchById(matchId);
+  }
+
+  async addPlayerToMatch(matchId: string, userId: string): Promise<MatchDocument | null> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      throw new Error("Match not found");
+    }
+
+    const alreadyInMatch = match.players.some(p => p.userId.toString() === userId);
+    if (alreadyInMatch) {
+      return match;
+    }
+
+    if (match.players.length >= 2) {
+      throw new Error("Match is full");
+    }
+
+    const players = [
+      ...match.players,
+      {
+        userId: new Types.ObjectId(userId),
+        isReady: false,
+        health: 3,
+      },
+    ];
+
+    return this.matchRepository.updateMatch(matchId, { players });
+  }
+
+  async setPlayerReady(matchId: string, userId: string, ready: boolean): Promise<MatchDocument | null> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      throw new Error("Match not found");
+    }
+
+    const players = match.players.map((p) =>
+      p.userId.toString() === userId ? { ...p, isReady: ready } : p,
+    );
+
+    return this.matchRepository.updateMatch(matchId, { players });
+  }
+
+  async setCurrentTurn(matchId: string, userId: string): Promise<MatchDocument | null> {
+    return this.matchRepository.updateMatch(matchId, { currentTurn: new Types.ObjectId(userId) });
+  }
+
+  async setMatchStatus(matchId: string, status: string): Promise<MatchDocument | null> {
+    return this.matchRepository.updateMatch(matchId, { status });
+  }
+
+  async addMove(
+    matchId: string,
+    move: { playerId: string; x: number; y: number; action: string; result: string },
+  ): Promise<MatchDocument | null> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      throw new Error("Match not found");
+    }
+
+    const newMove = {
+      playerId: new Types.ObjectId(move.playerId),
+      x: move.x,
+      y: move.y,
+      action: move.action,
+      result: move.result,
+      createdAt: new Date(),
+    };
+
+    const moves = match.moves ? [...match.moves, newMove] : [newMove];
+    return this.matchRepository.updateMatch(matchId, { moves });
+  }
+
+  async updateMatch(matchId: string, update: Partial<import("../model/match").MatchInput>): Promise<MatchDocument | null> {
+    return this.matchRepository.updateMatch(matchId, update);
+  }
+
   async createPrivateMatch(hostId: string): Promise<MatchDocument> {
     const existingMatch = await this.matchRepository.findActiveMatchByUserId(hostId);
     if (existingMatch) {

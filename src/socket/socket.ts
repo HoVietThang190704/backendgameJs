@@ -1,0 +1,27 @@
+import http from "http";
+import { Server } from "socket.io";
+import Container from "../lib/container/container";
+import { JwtService } from "../service/jwt.service";
+import { IMatchService } from "../service/match.service.interface";
+import { createSocketAuthMiddleware } from "./auth";
+import { registerSocketHandlers } from "./handlers";
+
+export function setupSocketServer(server: http.Server, allowedOrigins: string[]) {
+  const io = new Server(server, {
+    cors: {
+      origin: allowedOrigins,
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+  });
+
+  const container = Container.getInstance();
+  const matchService = container.get<IMatchService>("MatchService");
+  const jwtService = JwtService.getInstance();
+
+  io.use(createSocketAuthMiddleware(jwtService));
+
+  io.on("connection", (socket) => {
+    registerSocketHandlers(io, socket, matchService);
+  });
+}
