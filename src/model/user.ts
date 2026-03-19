@@ -1,24 +1,21 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, InferSchemaType } from "mongoose";
 
-export interface IUserDocument extends Document {
-    username: string;
-    email: string;
-    password: string;
-    role: "user" | "admin";
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-const UserSchema = new Schema<IUserDocument>(
-    {
-        username: { type: String, required: true, trim: true },
-        email: { type: String, required: true, unique: true, lowercase: true },
-        password: { type: String, required: true },
-        role: { type: String, enum: ["user", "admin"], default: "user" },
+export const userSchema = new Schema({
+    username: { type: String, required: true },
+    email: { type: String, required: true },
+    password: { type: String, required: true },
+    name: { type: String, default: '' },
+    rule: { type: String, default: 'user' },
+    avatar_url: { type: String, default: '', required: false },
+    isActive: { type: Boolean, default: true },
+    currentMatchId: { type: Schema.Types.ObjectId, ref: "Match", required: false },
+    created: {
+        time: { type: Date, default: Date.now }
     },
-    {
-        timestamps: true,
+    modified: {
+        time: { type: Date, default: Date.now }
     }
-);
+})
 
-export const UserModel = model<IUserDocument>("User", UserSchema);
+export const UserModel = model("User", userSchema);
+export type User = InferSchemaType<typeof userSchema>;

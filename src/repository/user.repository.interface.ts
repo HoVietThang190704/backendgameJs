@@ -1,21 +1,9 @@
-import { IUserDocument } from "../model/user";
+import { CreateUserDto } from "../dto/user.dto";
+import { User } from "../model/user";
 
 export interface IUserRepository {
-    /**
-     * Create a new user record.
-     * @param username
-     * @param email
-     * @param password - hashed password
-     */
-    create(username: string, email: string, password: string, role?: string): Promise<IUserDocument>;
-
-    /**
-     * Find a user by email address.
-     */
-    findByEmail(email: string): Promise<IUserDocument | null>;
-
-    /**
-     * Lookup user by id.
-     */
-    findById(id: string): Promise<IUserDocument | null>;
+  createUser (user: CreateUserDto): Promise<User>;
+  getUserByEmail (email: string): Promise<User | null>;
+  getUserById (id: string, projection?: string): Promise<User | null>;
+  setCurrentMatch(userId: string, matchId: string | null): Promise<void>;
 }

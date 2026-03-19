@@ -1,18 +1,9 @@
+import { CreateUserDto } from "../dto/user.dto";
+import { User } from "../model/user";
+
 export interface IUserService {
-    register(username: string, email: string, password: string): Promise<any>;
-    /**
-     * Authenticate credentials and return tokens
-     */
-    login(email: string, password: string): Promise<{
-        user: any;
-        accessToken: string;
-        refreshToken: string;
-    }>;
-
-    getProfile(id: string): Promise<any>;
-
-    /**
-     * Exchange a valid refresh token for a fresh access token.
-     */
-    refresh(refreshToken: string): Promise<{ accessToken: string }>;
+  createUser (user: CreateUserDto): Promise<User>;
+  getUserByEmail (email: string): Promise<User | null>;
+  getUserById (id: string, projection?: string): Promise<User | null>;
+  setCurrentMatch(userId: string, matchId: string | null): Promise<void>;
 }

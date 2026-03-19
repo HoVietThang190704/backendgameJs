@@ -1,13 +1,13 @@
 import { PipelineStage } from "mongoose";
 
 export class PipelineBuilder<T> {
-  private pipeline: any[] = [];
+  private pipeline: PipelineStage[] = [];
   constructor() {
     this.pipeline = [];
   }
 
   sort(sortCriteria: Record<string, 1 | -1>): PipelineBuilder<T> {
-    this.pipeline.push({ type: "sort", criteria: sortCriteria });
+    this.pipeline.push({ $sort: sortCriteria });
     return this;
   }
 
