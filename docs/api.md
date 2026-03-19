@@ -200,4 +200,84 @@ If bạn muốn, tôi sẽ:
 - Thêm examples cho frontend (TypeScript fetch/axios snippets)
 - Thêm mô tả lỗi chi tiết từ controller/service
 
+---
+
+# WebSocket (Socket.IO) Events
+
+**Connection**
+- Connect to: `ws://<server>` or `wss://<server>` (same host as REST API)
+- Auth: send JWT access token in the handshake:
+  ```js
+  const socket = io(SERVER_URL, {
+    auth: { token: accessToken },
+  });
+  ```
+
+## Event list
+
+### `join_room`
+- Client -> Server
+- Payload: `{ matchId: string }`
+- Server will join socket to the room named by the matchId.
+
+### `player_joined`
+- Server -> Room
+- Payload: `{ player: { userId: string } }`
+- Sent when a player joins the room.
+
+### `toggle_ready`
+- Client -> Server
+- Payload: `{ matchId: string, ready: boolean }`
+- Server broadcasts to the room and, when both players are ready, triggers `start_game`.
+
+### `start_game`
+- Server -> Room
+- Payload:
+  ```json
+  {
+    "matchId": "...",
+    "currentTurn": "<userId>",
+    "turnTimeLimit": 30
+  }
+  ```
+- Triggers when both players are ready.
+
+### `timer_tick`
+- Server -> Room
+- Sent every second during an active game:
+  ```json
+  { "remaining": 27 }
+  ```
+
+### `send_move`
+- Client -> Server
+- Payload: `{ matchId: string, x: number, y: number, action: string }`
+
+### `move_result`
+- Server -> Room
+- Payload:
+  ```json
+  {
+    "userId": "...",
+    "x": 1,
+    "y": 2,
+    "action": "open",
+    "result": "safe|bomb",
+    "health": 2
+  }
+  ```
+
+### `player_left`
+- Server -> Room
+- Payload: `{ userId: string }`
+- Sent when a player disconnects for more than 30s.
+
+### `game_over`
+- Server -> Room
+- Payload: `{ winnerId: string | null, loserId: string }`
+
+---
+
+> ⚠️ Note: Socket server uses the same CORS origins as the REST API.
+
 

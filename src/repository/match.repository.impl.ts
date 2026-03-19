@@ -10,6 +10,11 @@ export class MatchRepository implements IMatchRepository {
     return createdMatch;
   }
 
+  async findMatchById(matchId: string): Promise<MatchDocument | null> {
+    const objectId = Types.ObjectId.isValid(matchId) ? new Types.ObjectId(matchId) : matchId;
+    return await MatchModel.findById(objectId);
+  }
+
   async findActiveMatchByUserId(userId: string): Promise<MatchDocument | null> {
     const objectId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId;
     return await MatchModel.findOne({
