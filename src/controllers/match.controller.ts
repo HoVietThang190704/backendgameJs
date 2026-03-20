@@ -33,4 +33,38 @@ export class MatchController {
       res.status(400).json({ message });
     }
   }
+
+  async joinMatch(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const { matchId } = req.body;
+      if (!matchId) {
+        res.status(400).json({ message: "matchId is required" });
+        return;
+      }
+
+      const match = await this.matchService.addPlayerToMatch(matchId, userId);
+      if (!match) {
+        res.status(404).json({ message: "Match not found" });
+        return;
+      }
+
+      const response = new BaseResponse<{ matchId: string; pinCode: string; players: any[] }>()
+        .setResponse(200)
+        .setMessage("Joined match successfully")
+        .setSuccess(true)
+        .setData({ matchId: match._id?.toString() ?? "", pinCode: match.pinCode, players: match.players as any[] })
+        .build();
+
+      res.status(200).json(response);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to join match";
+      res.status(400).json({ message });
+    }
+  }
 }

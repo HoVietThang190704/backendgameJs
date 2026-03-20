@@ -5,8 +5,69 @@ import { authMiddleware } from "../middleware/auth.middleware";
 export function createMatchRoutes(matchController: MatchController): Router {
   const router = Router();
 
-  // Create private room (match)
+  /**
+   * @openapi
+   * /api/matches/create:
+   *   post:
+   *     summary: Create a private match room
+   *     tags:
+   *       - Match
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *     responses:
+   *       201:
+   *         description: Match created
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/BaseResponse'
+   *       401:
+   *         description: Unauthorized
+   *       400:
+   *         description: Bad request
+   */
   router.post("/create", authMiddleware, (req, res) => matchController.createPrivateMatch(req, res));
+
+  /**
+   * @openapi
+   * /api/matches/join:
+   *   post:
+   *     summary: Join an existing match room by ID
+   *     tags:
+   *       - Match
+   *     security:
+   *       - BearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               matchId:
+   *                 type: string
+   *                 example: "642f1e7dc1d3d75b8f89c789"
+   *     responses:
+   *       200:
+   *         description: Joined match successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/BaseResponse'
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Match not found
+   *       400:
+   *         description: Bad request
+   */
+  router.post("/join", authMiddleware, (req, res) => matchController.joinMatch(req, res));
 
   return router;
 }
