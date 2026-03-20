@@ -1,9 +1,14 @@
 import "dotenv/config";
 import dns from "dns";
 import dnsPromises from "node:dns/promises";
+import http from "http";
 import { createApp } from "./app";
 import { CorsOptions } from "cors";
 import { connectDatabase } from "./lib/database";
+import { setupSocketServer } from "./socket/socket";
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
+import { swaggerOptions } from "./swaggerOptions";
 
 const PORT = process.env.PORT || 5000;
 
@@ -23,15 +28,11 @@ console.log('CORS allowed origins:', allowedOrigins);
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    // log every incoming origin (useful to debug CORS failures)
     console.log('CORS request from origin:', origin);
 
-    // allow non-browser requests (e.g. curl, Postman) by default
     if (!origin) return callback(null, true);
 
-    // during development, you can optionally accept all origins
     if (process.env.NODE_ENV !== 'production') {
-      // quick bypass for local testing
       return callback(null, true);
     }
 
@@ -47,9 +48,16 @@ const corsOptions: CorsOptions = {
 };
 const app = createApp(corsOptions);
 
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
+
+const server = http.createServer(app);
+
+setupSocketServer(server, allowedOrigins);
+
 connectDatabase()
     .then(() => {
-        app.listen(PORT, () => {
+        server.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
     })
