@@ -6,6 +6,9 @@ import { createApp } from "./app";
 import { CorsOptions } from "cors";
 import { connectDatabase } from "./lib/database";
 import { setupSocketServer } from "./socket/socket";
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
+import { swaggerOptions } from "./swaggerOptions";
 
 const PORT = process.env.PORT || 5000;
 
@@ -44,6 +47,10 @@ const corsOptions: CorsOptions = {
   maxAge: 86400,
 };
 const app = createApp(corsOptions);
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { explorer: true }));
+
 const server = http.createServer(app);
 
 setupSocketServer(server, allowedOrigins);
