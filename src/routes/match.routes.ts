@@ -69,5 +69,41 @@ export function createMatchRoutes(matchController: MatchController): Router {
    */
   router.post("/join", authMiddleware, (req, res) => matchController.joinMatch(req, res));
 
+  /**
+   * @openapi
+   * /api/matches/{id}/ready:
+   *   patch:
+   *     summary: Set player ready status
+   *     tags:
+   *       - Match
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               isReady:
+   *                 type: boolean
+   *     responses:
+   *       200:
+   *         description: Status updated
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Match not found
+   *       400:
+   *         description: Bad request
+   */
+  router.patch("/:id/ready", authMiddleware, (req, res) => matchController.setReady(req, res));
+
   return router;
 }

@@ -5,6 +5,7 @@ import { JwtService } from "../service/jwt.service";
 import { IMatchService } from "../service/match.service.interface";
 import { createSocketAuthMiddleware } from "./auth";
 import { registerSocketHandlers } from "./handlers";
+import SocketService from "./socket.service";
 
 export function setupSocketServer(server: http.Server, allowedOrigins: string[]) {
   const io = new Server(server, {
@@ -14,6 +15,9 @@ export function setupSocketServer(server: http.Server, allowedOrigins: string[])
       credentials: true,
     },
   });
+
+  // Initialize SocketService
+  SocketService.getInstance().setIo(io);
 
   const container = Container.getInstance();
   const matchService = container.get<IMatchService>("MatchService");
