@@ -1,6 +1,7 @@
 import { AuthController } from '../../controllers/auth.controller';
 import { MatchController } from '../../controllers/match.controller';
 import { UserController } from '../../controllers/user.controller';
+import SocketService from '../../socket/socket.service';
 import { MatchRepository } from '../../repository/match.repository.impl';
 import { UserRepository } from '../../repository/user.repository.impl';
 import { IMatchRepository } from '../../repository/match.repository.interface';
@@ -42,10 +43,13 @@ class Container {
     const authController = new AuthController(authService);
     this.services.set('AuthController', authController);
 
+    const socketService = SocketService.getInstance();
+    this.services.set('SocketService', socketService);
+
     const userControllerInstance = new UserController(userService);
     this.services.set('UserController', userControllerInstance);
 
-    const matchController = new MatchController(matchService);
+    const matchController = new MatchController(matchService, socketService);
     this.services.set('MatchController', matchController);
   }
 

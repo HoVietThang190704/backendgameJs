@@ -2,7 +2,7 @@ import { JwtService } from "../service/jwt.service";
 import { Socket } from "socket.io";
 import { SocketAuth } from "./types";
 
-type SocketNext = (err?: any) => void;
+type SocketNext = (err?: Error) => void;
 
 export function createSocketAuthMiddleware(jwtService: JwtService) {
   return async (socket: Socket, next: SocketNext) => {
