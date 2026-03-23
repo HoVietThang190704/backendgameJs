@@ -19,6 +19,18 @@ export const matchSchema = new Schema({
   },
   turnTimeLimit: { type: Number, required: true, default: 30 },
   currentTurn: { type: Schema.Types.ObjectId, ref: "User", required: false },
+  player1Bombs: [
+    {
+      x: { type: Number, required: true },
+      y: { type: Number, required: true },
+    },
+  ],
+  player2Bombs: [
+    {
+      x: { type: Number, required: true },
+      y: { type: Number, required: true },
+    },
+  ],
   moves: [
     {
       playerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -30,6 +42,7 @@ export const matchSchema = new Schema({
     }
   ],
   lastTickAt: { type: Date, required: false },
+  startedAt: { type: Date, required: false },
 }, {
   timestamps: true,
 });
@@ -54,6 +67,14 @@ export type MatchInput = {
   };
   turnTimeLimit: number;
   currentTurn?: Types.ObjectId;
+  player1Bombs?: Array<{
+    x: number;
+    y: number;
+  }>;
+  player2Bombs?: Array<{
+    x: number;
+    y: number;
+  }>;
   moves?: Array<{
     playerId: Types.ObjectId;
     x: number;
@@ -63,4 +84,5 @@ export type MatchInput = {
     createdAt?: Date;
   }>;
   lastTickAt?: Date;
+  startedAt?: Date;
 };

@@ -68,10 +68,6 @@ async function handleJoinRoom(
 
     io.to(matchId).emit("ready_update", { players: readyStates });
 
-    const bothReady = updatedMatch.players.length >= 2 && updatedMatch.players.every((p) => p.isReady);
-    if (bothReady && updatedMatch.status === "waiting") {
-      await startGame(matchId, updatedMatch, io, matchService);
-    }
   } catch (error) {
     socket.emit("error", { message: (error as Error).message });
   }
@@ -104,10 +100,6 @@ async function handleToggleReady(
       ready,
     });
 
-    const bothReady = updatedMatch.players.length >= 2 && updatedMatch.players.every((p) => p.isReady);
-    if (bothReady && updatedMatch.status === "waiting") {
-      await startGame(matchId, updatedMatch, io, matchService);
-    }
   } catch (error) {
     socket.emit("error", { message: (error as Error).message });
   }
@@ -233,9 +225,7 @@ export async function startGame(
   io: Server,
   matchService: IMatchService,
 ) {
-  const currentTurn = match.hostId?.toString() || match.players[0]?.userId?.toString();
-  await matchService.setMatchStatus(matchId, "playing");
-  await matchService.setCurrentTurn(matchId, currentTurn);
+  const currentTurn = match.currentTurn?.toString() || match.hostId?.toString() || match.players[0]?.userId?.toString();
 
   io.to(matchId).emit("start_game", {
     matchId,

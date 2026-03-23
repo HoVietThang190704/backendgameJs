@@ -4,6 +4,7 @@ import { MatchDocument } from "../model/match";
 import { MatchPlayer } from "../socket/types";
 import { BaseResponse } from "../lib/baseresponse";
 import { SocketService } from "../socket/socket.service";
+import { startGame } from "../socket/handlers";
 
 export class MatchController {
   private readonly matchService: IMatchService;
@@ -100,15 +101,6 @@ export class MatchController {
         ready: isReady,
       });
 
-      const bothReady = updatedMatch.players.length >= 2 && updatedMatch.players.every((p) => p.isReady);
-      if (bothReady && updatedMatch.status === "waiting") {
-        const io = this.socketService.getIo();
-        if (io) {
-          const { startGame } = require("../socket/handlers"); 
-          await startGame(id, updatedMatch, io, this.matchService);
-        }
-      }
-
       const response = new BaseResponse<MatchDocument>()
         .setResponse(200)
         .setMessage("Status updated")
@@ -119,6 +111,62 @@ export class MatchController {
       res.status(200).json(response);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unable to update ready status";
+
+      if (message === "Player is not in this match") {
+        res.status(403).json({ message });
+        return;
+      }
+
+      res.status(400).json({ message });
+    }
+  }
+
+  async startMatch(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const { matchId } = req.params;
+      if (!matchId) {
+        res.status(400).json({ message: "matchId is required" });
+        return;
+      }
+
+      const startedMatch = await this.matchService.startMatch(matchId, userId);
+      if (!startedMatch) {
+        res.status(404).json({ message: "Match not found" });
+        return;
+      }
+
+      const io = this.socketService.getIo();
+      if (io) {
+        await startGame(matchId, startedMatch, io, this.matchService);
+      }
+
+      const response = new BaseResponse<MatchDocument>()
+        .setResponse(200)
+        .setMessage("Match started")
+        .setSuccess(true)
+        .setData(startedMatch)
+        .build();
+
+      res.status(200).json(response);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to start match";
+
+      if (message === "Match not found") {
+        res.status(404).json({ message });
+        return;
+      }
+
+      if (message === "Only room host can start match") {
+        res.status(403).json({ message });
+        return;
+      }
+
       res.status(400).json({ message });
     }
   }

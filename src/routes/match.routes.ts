@@ -105,5 +105,34 @@ export function createMatchRoutes(matchController: MatchController): Router {
    */
   router.patch("/:id/ready", authMiddleware, (req, res) => matchController.setReady(req, res));
 
+  /**
+   * @openapi
+   * /api/matches/{matchId}/start:
+   *   post:
+   *     summary: Start a match room
+   *     tags:
+   *       - Match
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: matchId
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Match started
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden
+   *       404:
+   *         description: Match not found
+   *       400:
+   *         description: Bad request
+   */
+  router.post("/:matchId/start", authMiddleware, (req, res) => matchController.startMatch(req, res));
+
   return router;
 }

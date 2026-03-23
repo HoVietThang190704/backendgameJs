@@ -7,8 +7,28 @@ import { MatchDocument, MatchInput } from "../model/match";
 const DEFAULT_GAME_BOARD = { rows: 10, cols: 10, bombs: 20 };
 const DEFAULT_TURN_TIME_LIMIT = 30;
 
+type BombCoordinate = {
+  x: number;
+  y: number;
+};
+
 function generatePinCode(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+function generateBombCoordinates(rows: number, cols: number, bombCount: number): BombCoordinate[] {
+  const totalCells = rows * cols;
+  const safeBombCount = Math.min(Math.max(bombCount, 0), totalCells);
+
+  const selectedIndices = new Set<number>();
+  while (selectedIndices.size < safeBombCount) {
+    selectedIndices.add(Math.floor(Math.random() * totalCells));
+  }
+
+  return Array.from(selectedIndices).map((cellIndex) => ({
+    x: cellIndex % cols,
+    y: Math.floor(cellIndex / cols),
+  }));
 }
 
 export class MatchService implements IMatchService {
@@ -61,11 +81,70 @@ export class MatchService implements IMatchService {
       throw new Error("Match not found");
     }
 
-    const players = match.players.map((p) =>
-      p.userId.toString() === userId ? { ...p, isReady: ready } : p,
-    );
+    let isParticipant = false;
+    const players = match.players.map((player) => {
+      const playerUserId = player.userId.toString();
+      if (playerUserId === userId) {
+        isParticipant = true;
+      }
+
+      return {
+        userId: new Types.ObjectId(playerUserId),
+        isReady: playerUserId === userId ? ready : player.isReady,
+        health: player.health,
+      };
+    });
+
+    if (!isParticipant) {
+      throw new Error("Player is not in this match");
+    }
 
     return this.matchRepository.updateMatch(matchId, { players });
+  }
+
+  async startMatch(matchId: string, requesterId: string): Promise<MatchDocument | null> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      throw new Error("Match not found");
+    }
+
+    if (match.status !== "waiting") {
+      throw new Error("Match is not in waiting state");
+    }
+
+    const hostId = match.hostId.toString();
+    if (hostId !== requesterId) {
+      throw new Error("Only room host can start match");
+    }
+
+    if (match.players.length < 2) {
+      throw new Error("Match must have 2 players to start");
+    }
+
+    const bothReady = match.players.every((player) => player.isReady);
+    if (!bothReady) {
+      throw new Error("All players must be ready before starting");
+    }
+
+    const gameBoard = match.gameBoard;
+    if (!gameBoard) {
+      throw new Error("Match gameBoard is missing");
+    }
+
+    const rows = gameBoard.rows;
+    const cols = gameBoard.cols;
+    const bombs = gameBoard.bombs;
+
+    const player1Bombs = generateBombCoordinates(rows, cols, bombs);
+    const player2Bombs = generateBombCoordinates(rows, cols, bombs);
+
+    return this.matchRepository.updateMatch(matchId, {
+      status: "playing",
+      startedAt: new Date(),
+      currentTurn: match.hostId,
+      player1Bombs,
+      player2Bombs,
+    });
   }
 
   async setCurrentTurn(matchId: string, userId: string): Promise<MatchDocument | null> {
@@ -105,7 +184,7 @@ export class MatchService implements IMatchService {
   async createPrivateMatch(hostId: string): Promise<MatchDocument> {
     const existingMatch = await this.matchRepository.findActiveMatchByUserId(hostId);
     if (existingMatch) {
-      throw new Error("User is already in an active match");
+      return existingMatch;
     }
 
     // Ensure PIN is unique among open rooms
