@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { IMatchService } from "../service/match.service.interface";
+import { IWaitingQueueService } from "../service/waitingQueue.service.interface";
 import { MatchDocument } from "../model/match";
+import { WaitingQueueDocument } from "../model/waitingQueue";
 import { MatchPlayer } from "../socket/types";
 import { BaseResponse } from "../lib/baseresponse";
 import { SocketService } from "../socket/socket.service";
@@ -8,10 +10,16 @@ import { SocketService } from "../socket/socket.service";
 export class MatchController {
   private readonly matchService: IMatchService;
   private readonly socketService: SocketService;
+  private readonly waitingQueueService: IWaitingQueueService;
 
-  constructor(matchService: IMatchService, socketService: SocketService) {
+  constructor(
+    matchService: IMatchService,
+    socketService: SocketService,
+    waitingQueueService: IWaitingQueueService
+  ) {
     this.matchService = matchService;
     this.socketService = socketService;
+    this.waitingQueueService = waitingQueueService;
   }
 
   async createPrivateMatch(req: Request, res: Response): Promise<void> {
@@ -119,6 +127,70 @@ export class MatchController {
       res.status(200).json(response);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unable to update ready status";
+      res.status(400).json({ message });
+    }
+  }
+
+  async findMatch(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const { boardSize } = req.body;
+      if (!boardSize) {
+        res.status(400).json({ message: "boardSize is required" });
+        return;
+      }
+
+      const queueRecord = await this.waitingQueueService.addToQueue(userId, boardSize);
+
+      const response = new BaseResponse<WaitingQueueDocument>()
+        .setResponse(200)
+        .setMessage("Searching for opponent")
+        .setSuccess(true)
+        .setData(queueRecord)
+        .build();
+
+      res.status(200).json(response);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to find match";
+      res.status(400).json({ message });
+    }
+  }
+
+  async cancelMatch(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const cancelledQueue = await this.waitingQueueService.cancelFromQueue(userId);
+      if (!cancelledQueue) {
+        const response = new BaseResponse<null>()
+          .setResponse(200)
+          .setMessage("No active queue entry to cancel")
+          .setSuccess(false)
+          .build();
+
+        res.status(200).json(response);
+        return;
+      }
+
+      const response = new BaseResponse<WaitingQueueDocument>()
+        .setResponse(200)
+        .setMessage("Search cancelled")
+        .setSuccess(true)
+        .setData(cancelledQueue)
+        .build();
+
+      res.status(200).json(response);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to cancel search";
       res.status(400).json({ message });
     }
   }

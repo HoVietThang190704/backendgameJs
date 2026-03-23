@@ -9,6 +9,7 @@ export const userSchema = new Schema({
     avatar_url: { type: String, default: '', required: false },
     isActive: { type: Boolean, default: true },
     currentMatchId: { type: Schema.Types.ObjectId, ref: "Match", required: false },
+    rank: { type: Number, default: 1000 },
     created: {
         time: { type: Date, default: Date.now }
     },
