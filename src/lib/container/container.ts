@@ -12,6 +12,10 @@ import { AuthService } from '../../service/auth.service.impl';
 import { IMatchService } from '../../service/match.service.interface';
 import { IUserService } from '../../service/user.service.interface';
 import { IAuthService } from '../../service/auth.service.interface';
+import { WaitingQueueRepository } from '../../repository/waitingQueue.repository.impl';
+import { IWaitingQueueRepository } from '../../repository/waitingQueue.repository.interface';
+import { WaitingQueueService } from '../../service/waitingQueue.service.impl';
+import { IWaitingQueueService } from '../../service/waitingQueue.service.interface';
 
 class Container {
   private static instance: Container;
@@ -29,6 +33,9 @@ class Container {
     const matchRepository: IMatchRepository = new MatchRepository();
     this.services.set('MatchRepository', matchRepository);
 
+    const waitingQueueRepository: IWaitingQueueRepository = new WaitingQueueRepository();
+    this.services.set('WaitingQueueRepository', waitingQueueRepository);
+
     // Register services
     const userService: IUserService = new UserService(userRepository);
     this.services.set('UserService', userService);
@@ -38,6 +45,9 @@ class Container {
 
     const authService: IAuthService = new AuthService(userService);
     this.services.set('AuthService', authService);
+
+    const waitingQueueService: IWaitingQueueService = new WaitingQueueService(waitingQueueRepository, userService);
+    this.services.set('WaitingQueueService', waitingQueueService);
 
     // Register controllers
     const authController = new AuthController(authService);
@@ -49,7 +59,7 @@ class Container {
     const userControllerInstance = new UserController(userService);
     this.services.set('UserController', userControllerInstance);
 
-    const matchController = new MatchController(matchService, socketService);
+    const matchController = new MatchController(matchService, socketService, waitingQueueService);
     this.services.set('MatchController', matchController);
   }
 

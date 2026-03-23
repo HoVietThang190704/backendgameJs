@@ -11,6 +11,7 @@ export const createUserDto = z.object({
     avatar_url: z.string().url().optional(),
     isActive: z.boolean().default(true),
     currentMatchId: z.instanceof(Types.ObjectId).optional(),
+    rank: z.number().default(1000),
     created: z.object({
         time: z.date().default(new Date())
     }).optional(),
