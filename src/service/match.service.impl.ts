@@ -7,8 +7,30 @@ import { MatchDocument, MatchInput } from "../model/match";
 const DEFAULT_GAME_BOARD = { rows: 10, cols: 10, bombs: 20 };
 const DEFAULT_TURN_TIME_LIMIT = 30;
 
+type BombCoordinate = {
+  x: number;
+  y: number;
+};
+
 function generatePinCode(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+function generateBombCoordinates(rows: number, cols: number, bombs: number): BombCoordinate[] {
+  const totalCells = rows * cols;
+  const bombCount = Math.min(Math.max(0, bombs), totalCells);
+  const coordinateSet = new Set<string>();
+
+  while (coordinateSet.size < bombCount) {
+    const x = Math.floor(Math.random() * rows);
+    const y = Math.floor(Math.random() * cols);
+    coordinateSet.add(`${x}:${y}`);
+  }
+
+  return Array.from(coordinateSet).map((value) => {
+    const [x, y] = value.split(":").map(Number);
+    return { x, y };
+  });
 }
 
 export class MatchService implements IMatchService {
@@ -61,14 +83,35 @@ export class MatchService implements IMatchService {
       throw new Error("Match not found");
     }
 
-    const players = match.players.map((p) =>
-      p.userId.toString() === userId ? { ...p, isReady: ready } : p,
-    );
+    const isPlayerInMatch = match.players.some((p) => p.userId.toString() === userId);
+    if (!isPlayerInMatch) {
+      throw new Error("Player is not in this match");
+    }
+
+    const players = match.players.map((p) => {
+      const basePlayer = typeof (p as { toObject?: () => unknown }).toObject === "function"
+        ? (p as { toObject: () => { userId: Types.ObjectId; isReady: boolean; health: number; _id?: Types.ObjectId } }).toObject()
+        : {
+          userId: p.userId,
+          isReady: p.isReady,
+          health: p.health,
+        };
+
+      return {
+        ...basePlayer,
+        isReady: p.userId.toString() === userId ? ready : p.isReady,
+      };
+    });
 
     return this.matchRepository.updateMatch(matchId, { players });
   }
 
   async leaveMatch(matchId: string, userId: string): Promise<MatchDocument | null> {
+  async startMatch(
+    matchId: string,
+    requestedByUserId?: string,
+    enforceHostCheck: boolean = false,
+  ): Promise<MatchDocument | null> {
     const match = await this.getMatchById(matchId);
     if (!match) {
       throw new Error("Match not found");
@@ -108,6 +151,40 @@ export class MatchService implements IMatchService {
     const updatedMatch = await this.matchRepository.updateMatch(matchId, updatedMatchData);
 
     return updatedMatch;
+    if (match.status !== "waiting") {
+      throw new Error("Match is not in waiting state");
+    }
+
+    const bothReady = match.players.length >= 2 && match.players.every((player) => player.isReady);
+    if (!bothReady) {
+      throw new Error("Both players must be ready");
+    }
+
+    const hostId = match.hostId?.toString();
+    if (enforceHostCheck && requestedByUserId && hostId !== requestedByUserId) {
+      throw new Error("Only host can start the match");
+    }
+
+    const gameBoard = match.gameBoard;
+    if (!gameBoard) {
+      throw new Error("Match game board is not configured");
+    }
+
+    const player1Bombs = generateBombCoordinates(gameBoard.rows, gameBoard.cols, gameBoard.bombs);
+    const player2Bombs = generateBombCoordinates(gameBoard.rows, gameBoard.cols, gameBoard.bombs);
+    const firstTurn = hostId || match.players[0]?.userId?.toString();
+
+    if (!firstTurn) {
+      throw new Error("Unable to determine first turn");
+    }
+
+    return this.matchRepository.updateMatch(matchId, {
+      status: "playing",
+      startedAt: new Date(),
+      player1Bombs,
+      player2Bombs,
+      currentTurn: new Types.ObjectId(firstTurn),
+    });
   }
 
   async setCurrentTurn(matchId: string, userId: string): Promise<MatchDocument | null> {

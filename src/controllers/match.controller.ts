@@ -234,6 +234,7 @@ export class MatchController {
   }
 
   async leaveMatch(req: Request, res: Response): Promise<void> {
+  async startMatch(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.userId;
       if (!userId) {
@@ -249,6 +250,14 @@ export class MatchController {
 
       const originalMatch = await this.matchService.getMatchById(id);
       if (!originalMatch) {
+      const { matchId } = req.params;
+      if (!matchId) {
+        res.status(400).json({ message: "matchId is required" });
+        return;
+      }
+
+      const startedMatch = await this.matchService.startMatch(matchId, userId, true);
+      if (!startedMatch) {
         res.status(404).json({ message: "Match not found" });
         return;
       }
@@ -278,11 +287,34 @@ export class MatchController {
         .setMessage("Left match successfully")
         .setSuccess(true)
         .setData(updatedMatch)
+      const io = this.socketService.getIo();
+      if (io) {
+        const { startMatchTimer } = require("../socket/handlers");
+        io.to(matchId).emit("start_game", {
+          matchId,
+          currentTurn: startedMatch.currentTurn?.toString() ?? null,
+          turnTimeLimit: startedMatch.turnTimeLimit,
+        });
+        startMatchTimer(matchId, io, this.matchService);
+      }
+
+      const response = new BaseResponse<MatchDocument>()
+        .setResponse(200)
+        .setMessage("Match started")
+        .setSuccess(true)
+        .setData(startedMatch)
         .build();
 
       res.status(200).json(response);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unable to leave match";
+      const message = error instanceof Error ? error.message : "Unable to start match";
+
+      if (message === "Only host can start the match") {
+        res.status(403).json({ message });
+        return;
+      }
+
       res.status(400).json({ message });
     }
   }
