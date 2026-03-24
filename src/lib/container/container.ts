@@ -1,6 +1,7 @@
 import { AuthController } from '../../controllers/auth.controller';
 import { MatchController } from '../../controllers/match.controller';
 import { UserController } from '../../controllers/user.controller';
+import SocketService from '../../socket/socket.service';
 import { MatchRepository } from '../../repository/match.repository.impl';
 import { UserRepository } from '../../repository/user.repository.impl';
 import { IMatchRepository } from '../../repository/match.repository.interface';
@@ -11,6 +12,10 @@ import { AuthService } from '../../service/auth.service.impl';
 import { IMatchService } from '../../service/match.service.interface';
 import { IUserService } from '../../service/user.service.interface';
 import { IAuthService } from '../../service/auth.service.interface';
+import { WaitingQueueRepository } from '../../repository/waitingQueue.repository.impl';
+import { IWaitingQueueRepository } from '../../repository/waitingQueue.repository.interface';
+import { WaitingQueueService } from '../../service/waitingQueue.service.impl';
+import { IWaitingQueueService } from '../../service/waitingQueue.service.interface';
 
 class Container {
   private static instance: Container;
@@ -28,6 +33,9 @@ class Container {
     const matchRepository: IMatchRepository = new MatchRepository();
     this.services.set('MatchRepository', matchRepository);
 
+    const waitingQueueRepository: IWaitingQueueRepository = new WaitingQueueRepository();
+    this.services.set('WaitingQueueRepository', waitingQueueRepository);
+
     // Register services
     const userService: IUserService = new UserService(userRepository);
     this.services.set('UserService', userService);
@@ -38,14 +46,20 @@ class Container {
     const authService: IAuthService = new AuthService(userService);
     this.services.set('AuthService', authService);
 
+    const waitingQueueService: IWaitingQueueService = new WaitingQueueService(waitingQueueRepository, userService);
+    this.services.set('WaitingQueueService', waitingQueueService);
+
     // Register controllers
     const authController = new AuthController(authService);
     this.services.set('AuthController', authController);
 
+    const socketService = SocketService.getInstance();
+    this.services.set('SocketService', socketService);
+
     const userControllerInstance = new UserController(userService);
     this.services.set('UserController', userControllerInstance);
 
-    const matchController = new MatchController(matchService);
+    const matchController = new MatchController(matchService, socketService, waitingQueueService, userService);
     this.services.set('MatchController', matchController);
   }
 

@@ -227,7 +227,7 @@ async function handleDisconnect(io: Server, socket: Socket, matchService: IMatch
   disconnectTimers.set(key, timer);
 }
 
-async function startGame(
+export async function startGame(
   matchId: string,
   match: MatchDocument,
   io: Server,
@@ -246,7 +246,7 @@ async function startGame(
   startMatchTimer(matchId, io, matchService);
 }
 
-function startMatchTimer(matchId: string, io: Server, matchService: IMatchService) {
+export function startMatchTimer(matchId: string, io: Server, matchService: IMatchService) {
   stopMatchTimer(matchId);
 
   const timer = {
