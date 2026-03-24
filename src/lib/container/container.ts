@@ -59,7 +59,7 @@ class Container {
     const userControllerInstance = new UserController(userService);
     this.services.set('UserController', userControllerInstance);
 
-    const matchController = new MatchController(matchService, socketService, waitingQueueService);
+    const matchController = new MatchController(matchService, socketService, waitingQueueService, userService);
     this.services.set('MatchController', matchController);
   }
 

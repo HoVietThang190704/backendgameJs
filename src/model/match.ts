@@ -30,6 +30,7 @@ export const matchSchema = new Schema({
     },
   ],
   turnTimeLimit: { type: Number, required: true, default: 30 },
+  turnStartTime: { type: Date, required: false },
   currentTurn: { type: Schema.Types.ObjectId, ref: "User", required: false },
   startedAt: { type: Date, required: false },
   moves: [
@@ -76,6 +77,7 @@ export type MatchInput = {
   turnTimeLimit: number;
   currentTurn?: Types.ObjectId;
   startedAt?: Date;
+  turnStartTime?: Date;
   moves?: Array<{
     playerId: Types.ObjectId;
     x: number;
