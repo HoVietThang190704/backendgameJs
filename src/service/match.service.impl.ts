@@ -182,6 +182,51 @@ export class MatchService implements IMatchService {
     return this.matchRepository.updateMatch(matchId, { moves });
   }
 
+  async leaveMatch(matchId: string, userId: string): Promise<MatchDocument | null> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      throw new Error("Match not found");
+    }
+
+    const player = match.players.find((p) => p.userId.toString() === userId);
+    if (!player) {
+      throw new Error("Player is not in this match");
+    }
+
+    const remainingPlayers = match.players.filter((p) => p.userId.toString() !== userId);
+
+    // Reset user's current match
+    await this.userService.setCurrentMatch(userId, null);
+
+    // If no player remains, delete match
+    if (remainingPlayers.length === 0) {
+      await this.matchRepository.deleteMatch(matchId);
+      return null;
+    }
+
+    const isHost = match.hostId?.toString() === userId;
+
+    // If host leaves, assign host to remaining player
+    const updateData: Partial<MatchInput> = {
+      players: remainingPlayers,
+    };
+
+    if (isHost) {
+      updateData.hostId = remainingPlayers[0].userId;
+    }
+
+    // If match is active and a player left, mark it finished to avoid ghost match
+    if (match.status === "playing") {
+      updateData.status = "finished";
+      updateData.currentTurn = undefined;
+      updateData.turnStartTime = undefined;
+    }
+
+    const updatedMatch = await this.matchRepository.updateMatch(matchId, updateData);
+
+    return updatedMatch;
+  }
+
   async updateMatch(matchId: string, update: Partial<import("../model/match").MatchInput>): Promise<MatchDocument | null> {
     return this.matchRepository.updateMatch(matchId, update);
   }
