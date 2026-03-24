@@ -6,4 +6,5 @@ export interface IMatchRepository {
   findActiveMatchByUserId(userId: string): Promise<MatchDocument | null>;
   findMatchByPinCode(pinCode: string): Promise<MatchDocument | null>;
   updateMatch(matchId: string, update: Partial<MatchInput>): Promise<MatchDocument | null>;
+  deleteMatch(matchId: string): Promise<void>;
 }

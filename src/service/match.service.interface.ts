@@ -10,4 +10,5 @@ export interface IMatchService {
   setMatchStatus(matchId: string, status: string): Promise<MatchDocument | null>;
   addMove(matchId: string, move: { playerId: string; x: number; y: number; action: string; result: string }): Promise<MatchDocument | null>;
   updateMatch(matchId: string, update: Partial<MatchInput>): Promise<MatchDocument | null>;
+  leaveMatch(matchId: string, userId: string): Promise<MatchDocument | null>;
 }

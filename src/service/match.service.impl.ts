@@ -68,6 +68,48 @@ export class MatchService implements IMatchService {
     return this.matchRepository.updateMatch(matchId, { players });
   }
 
+  async leaveMatch(matchId: string, userId: string): Promise<MatchDocument | null> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      throw new Error("Match not found");
+    }
+
+    const userIndex = match.players.findIndex((p) => p.userId.toString() === userId);
+    if (userIndex === -1) {
+      throw new Error("User is not part of this match");
+    }
+
+    // Remove the leaving user from match players
+    const remainingPlayers = match.players.filter((p) => p.userId.toString() !== userId);
+
+    // Reset user currentMatchId outside this method (in controller) via userService
+
+    if (remainingPlayers.length === 0) {
+      // No players remain, delete the match
+      await this.matchRepository.deleteMatch(matchId);
+      return null;
+    }
+
+    const updatedMatchData: any = {
+      players: remainingPlayers,
+      status: remainingPlayers.length === 1 && match.status === "playing" ? "waiting" : match.status,
+    };
+
+    const hostLeft = match.hostId?.toString() === userId;
+    if (hostLeft) {
+      updatedMatchData.hostId = remainingPlayers[0].userId;
+    }
+
+    if (match.currentTurn?.toString() === userId) {
+      updatedMatchData.currentTurn = remainingPlayers[0].userId;
+      updatedMatchData.turnStartTime = new Date();
+    }
+
+    const updatedMatch = await this.matchRepository.updateMatch(matchId, updatedMatchData);
+
+    return updatedMatch;
+  }
+
   async setCurrentTurn(matchId: string, userId: string): Promise<MatchDocument | null> {
     return this.matchRepository.updateMatch(matchId, { currentTurn: new Types.ObjectId(userId), turnStartTime: new Date() });
   }

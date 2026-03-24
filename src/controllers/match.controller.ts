@@ -233,6 +233,60 @@ export class MatchController {
     }
   }
 
+  async leaveMatch(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const { id } = req.params;
+      if (!id) {
+        res.status(400).json({ message: "Match id is required" });
+        return;
+      }
+
+      const originalMatch = await this.matchService.getMatchById(id);
+      if (!originalMatch) {
+        res.status(404).json({ message: "Match not found" });
+        return;
+      }
+
+      const updatedMatch = await this.matchService.leaveMatch(id, userId);
+
+      await this.userService.setCurrentMatch(userId, null);
+
+      if (!updatedMatch) {
+        // room deleted because no players remain
+        this.socketService.emitToRoom(id, "match_deleted", { matchId: id });
+
+        const response = new BaseResponse<null>()
+          .setResponse(200)
+          .setMessage("Left match and match deleted")
+          .setSuccess(true)
+          .build();
+
+        res.status(200).json(response);
+        return;
+      }
+
+      this.socketService.emitToRoom(id, "player_left", { userId });
+
+      const response = new BaseResponse<MatchDocument>()
+        .setResponse(200)
+        .setMessage("Left match successfully")
+        .setSuccess(true)
+        .setData(updatedMatch)
+        .build();
+
+      res.status(200).json(response);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to leave match";
+      res.status(400).json({ message });
+    }
+  }
+
   async findMatch(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.userId;

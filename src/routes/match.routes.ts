@@ -100,6 +100,35 @@ export function createMatchRoutes(matchController: MatchController): Router {
 
   /**
    * @openapi
+   * /api/matches/{id}/leave:
+   *   delete:
+   *     summary: Leave a match
+   *     tags:
+   *       - Match
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Left match successfully or match deleted
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/BaseResponse'
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Match not found
+   */
+  router.delete("/:id/leave", authMiddleware, (req, res) => matchController.leaveMatch(req, res));
+
+  /**
+   * @openapi
    * /api/matches/{id}/ready:
    *   patch:
    *     summary: Set player ready status

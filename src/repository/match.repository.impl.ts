@@ -33,4 +33,9 @@ export class MatchRepository implements IMatchRepository {
     const objectId = Types.ObjectId.isValid(matchId) ? new Types.ObjectId(matchId) : matchId;
     return await MatchModel.findByIdAndUpdate(objectId, update, { new: true });
   }
+
+  async deleteMatch(matchId: string): Promise<void> {
+    const objectId = Types.ObjectId.isValid(matchId) ? new Types.ObjectId(matchId) : matchId;
+    await MatchModel.findByIdAndDelete(objectId);
+  }
 }
