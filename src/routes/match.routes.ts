@@ -71,6 +71,35 @@ export function createMatchRoutes(matchController: MatchController): Router {
 
   /**
    * @openapi
+   * /api/matches/{id}:
+   *   get:
+   *     summary: Get match state (board and player status)
+   *     tags:
+   *       - Match
+   *     security:
+   *       - BearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Match state
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/BaseResponse'
+   *       401:
+   *         description: Unauthorized
+   *       404:
+   *         description: Match not found
+   */
+  router.get("/:id", authMiddleware, (req, res) => matchController.getMatchState(req, res));
+
+  /**
+   * @openapi
    * /api/matches/{id}/ready:
    *   patch:
    *     summary: Set player ready status
