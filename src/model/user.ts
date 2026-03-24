@@ -10,6 +10,10 @@ export const userSchema = new Schema({
     isActive: { type: Boolean, default: true },
     currentMatchId: { type: Schema.Types.ObjectId, ref: "Match", required: false },
     rank: { type: Number, default: 1000 },
+    wins: { type: Number, default: 0 },
+    losses: { type: Number, default: 0 },
+    totalMatches: { type: Number, default: 0 },
+    winRate: { type: Number, default: 0 },
     created: {
         time: { type: Date, default: Date.now }
     },

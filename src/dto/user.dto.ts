@@ -12,6 +12,10 @@ export const createUserDto = z.object({
     isActive: z.boolean().default(true),
     currentMatchId: z.instanceof(Types.ObjectId).optional(),
     rank: z.number().default(1000),
+    wins: z.number().default(0),
+    losses: z.number().default(0),
+    totalMatches: z.number().default(0),
+    winRate: z.number().default(0),
     created: z.object({
         time: z.date().default(new Date())
     }).optional(),

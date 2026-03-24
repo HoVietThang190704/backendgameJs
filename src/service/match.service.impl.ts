@@ -69,7 +69,7 @@ export class MatchService implements IMatchService {
   }
 
   async setCurrentTurn(matchId: string, userId: string): Promise<MatchDocument | null> {
-    return this.matchRepository.updateMatch(matchId, { currentTurn: new Types.ObjectId(userId) });
+    return this.matchRepository.updateMatch(matchId, { currentTurn: new Types.ObjectId(userId), turnStartTime: new Date() });
   }
 
   async setMatchStatus(matchId: string, status: string): Promise<MatchDocument | null> {
