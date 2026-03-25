@@ -6,4 +6,6 @@ export interface IUserService {
   getUserByEmail (email: string): Promise<User | null>;
   getUserById (id: string, projection?: string): Promise<User | null>;
   setCurrentMatch(userId: string, matchId: string | null): Promise<void>;
+  getTopUsers(limit: number): Promise<User[]>;
+  getUserOwnRankPosition(userId: string): Promise<{ rank: number; position: number } | null>;
 }

@@ -25,4 +25,21 @@ export class UserService implements IUserService {
   async setCurrentMatch(userId: string, matchId: string | null): Promise<void> {
     await this.userRepository.setCurrentMatch(userId, matchId);
   }
+
+  async getTopUsers(limit: number): Promise<User[]> {
+    return await this.userRepository.getTopUsers(limit);
+  }
+
+  async getUserOwnRankPosition(userId: string): Promise<{ rank: number; position: number } | null> {
+    const user = await this.userRepository.getUserById(userId);
+    if (!user) {
+      return null;
+    }
+
+    const higher = await this.userRepository.countUsersWithHigherRank(user.rank);
+    return {
+      rank: user.rank,
+      position: higher + 1,
+    };
+  }
 }

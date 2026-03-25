@@ -34,5 +34,7 @@ export function createUserRoutes(userController: UserController): Router {
      */
     router.get('/profile', authMiddleware, (req, res) => userController.getProfile(req, res));
 
+    router.get('/leaderboard', authMiddleware, (req, res) => userController.getLeaderboard(req, res));
+
     return router;
 }
