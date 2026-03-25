@@ -22,5 +22,7 @@ export const userSchema = new Schema({
     }
 })
 
+userSchema.index({ rank: -1 });
+
 export const UserModel = model("User", userSchema);
 export type User = InferSchemaType<typeof userSchema>;

@@ -22,4 +22,12 @@ export class UserRepository implements IUserRepository {
   async setCurrentMatch(userId: string, matchId: string | null): Promise<void> {
     await UserModel.findByIdAndUpdate(userId, { currentMatchId: matchId });
   }
+
+  async getTopUsers(limit: number): Promise<User[]> {
+    return await UserModel.find({}, { email: 0, password: 0 }).sort({ rank: -1 }).limit(limit).lean();
+  }
+
+  async countUsersWithHigherRank(rank: number): Promise<number> {
+    return await UserModel.countDocuments({ rank: { $gt: rank } });
+  }
 }
