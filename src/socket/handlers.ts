@@ -233,6 +233,22 @@ export async function startGame(
   io: Server,
   matchService: IMatchService,
 ) {
+  try {
+    const startedMatch = await matchService.startMatch(matchId, match.hostId?.toString(), false);
+    if (startedMatch) {
+      io.to(matchId).emit("start_game", {
+        matchId,
+        currentTurn: startedMatch.currentTurn?.toString() ?? null,
+        turnTimeLimit: startedMatch.turnTimeLimit || DEFAULT_TURN_TIME_LIMIT,
+      });
+
+      startMatchTimer(matchId, io, matchService);
+      return;
+    }
+  } catch {
+    // fallback to existing behavior below
+  }
+
   const currentTurn = match.hostId?.toString() || match.players[0]?.userId?.toString();
   await matchService.setMatchStatus(matchId, "playing");
   await matchService.setCurrentTurn(matchId, currentTurn);
