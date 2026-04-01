@@ -50,6 +50,10 @@ export class MatchService implements IMatchService {
     return this.matchRepository.findMatchById(matchId);
   }
 
+  async getMatchHistory(userId: string, page: number, limit: number): Promise<MatchDocument[]> {
+    return this.matchRepository.findFinishedMatchesByUserId(userId, page, limit);
+  }
+
   async addPlayerToMatch(matchId: string, userId: string): Promise<MatchDocument | null> {
     const match = await this.getMatchById(matchId);
     if (!match) {

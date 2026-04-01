@@ -34,6 +34,20 @@ export class MatchRepository implements IMatchRepository {
     return await MatchModel.findByIdAndUpdate(objectId, update, { new: true });
   }
 
+  async findFinishedMatchesByUserId(userId: string, page: number, limit: number): Promise<MatchDocument[]> {
+    const objectId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId;
+    const skip = Math.max(0, (page - 1) * limit);
+
+    return await MatchModel.find({
+      status: "finished",
+      "players.userId": objectId,
+    })
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("players.userId", "name username avatar_url");
+  }
+
   async deleteMatch(matchId: string): Promise<MatchDocument | null> {
     const objectId = Types.ObjectId.isValid(matchId) ? new Types.ObjectId(matchId) : matchId;
     return await MatchModel.findByIdAndDelete(objectId);

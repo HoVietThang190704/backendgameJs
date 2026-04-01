@@ -183,6 +183,70 @@ export class MatchController {
     }
   }
 
+  async getMatchHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const page = Number(req.query.page) >= 1 ? Number(req.query.page) : 1;
+      const limit = Number(req.query.limit) >= 1 && Number(req.query.limit) <= 20 ? Number(req.query.limit) : 10;
+
+      const matches = await this.matchService.getMatchHistory(userId, page, limit);
+
+      const history = await Promise.all(matches.map(async (match) => {
+        const userInMatch = match.players.find((p) => p.userId.toString() === userId);
+        const opponentInMatch = match.players.find((p) => p.userId.toString() !== userId);
+
+        let result: "win" | "lose" | "draw" = "draw";
+        if (userInMatch && opponentInMatch) {
+          if (userInMatch.health === 0) result = "lose";
+          else if (opponentInMatch.health === 0) result = "win";
+          else result = "draw";
+        } else if (userInMatch && !opponentInMatch) {
+          result = "win";
+        }
+
+        const opponentUser: any = opponentInMatch?.userId;
+        const opponentDisplayName = opponentUser?.name || opponentUser?.username || "Unknown";
+        const opponentAvatar = opponentUser?.avatar_url || "";
+
+        const playedAt = match.updatedAt ?? match.createdAt ?? new Date();
+        const startAt = match.startedAt ?? match.createdAt ?? playedAt;
+        const durationMs = Math.max(0, playedAt.getTime() - startAt.getTime());
+        const durationSec = Math.floor(durationMs / 1000);
+        const durationMin = Math.floor(durationSec / 60);
+        const durationStr = `${durationMin}m ${durationSec % 60}s`;
+
+        return {
+          matchId: match._id?.toString() ?? "",
+          result,
+          opponent: {
+            displayName: opponentDisplayName,
+            avatar: opponentAvatar,
+          },
+          duration: durationStr,
+          eloChange: 0,
+          playedAt,
+        };
+      }));
+
+      const response = new BaseResponse<typeof history>()
+        .setResponse(200)
+        .setMessage("Match history fetched")
+        .setSuccess(true)
+        .setData(history)
+        .build();
+
+      res.status(200).json(response);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to get match history";
+      res.status(400).json({ message });
+    }
+  }
+
   async leaveMatch(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.userId;

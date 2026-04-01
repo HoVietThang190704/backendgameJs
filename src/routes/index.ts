@@ -1,5 +1,6 @@
 import Container from "../lib/container/container";
 import { Router } from "express";
+import { authMiddleware } from "../middleware/auth.middleware";
 import { createAuthRoutes } from "./auth.routes";
 import { AuthController } from "../controllers/auth.controller";
 import { UserController } from "../controllers/user.controller";
@@ -18,6 +19,8 @@ export default function setupRoutes(): Router {
     router.use('/auth', createAuthRoutes(authController));
     router.use('/user', createUserRoutes(userController));
     router.use('/matches', createMatchRoutes(matchController));
+
+    router.get('/match-history', authMiddleware, (req, res) => matchController.getMatchHistory(req, res));
 
     return router;
 }

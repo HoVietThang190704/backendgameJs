@@ -4,6 +4,7 @@ export interface IMatchService {
   createPrivateMatch(hostId: string): Promise<MatchDocument>;
   getActiveMatchForUser(userId: string): Promise<MatchDocument | null>;
   getMatchById(matchId: string): Promise<MatchDocument | null>;
+  getMatchHistory(userId: string, page: number, limit: number): Promise<MatchDocument[]>;
   addPlayerToMatch(matchId: string, userId: string): Promise<MatchDocument | null>;
   setPlayerReady(matchId: string, userId: string, ready: boolean): Promise<MatchDocument | null>;
   startMatch(matchId: string, requestedByUserId?: string, enforceHostCheck?: boolean): Promise<MatchDocument | null>;
