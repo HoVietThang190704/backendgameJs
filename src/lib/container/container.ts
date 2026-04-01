@@ -1,5 +1,6 @@
 import { AuthController } from '../../controllers/auth.controller';
 import { MatchController } from '../../controllers/match.controller';
+import { WaitingQueueController } from '../../controllers/waitingQueue.controller';
 import { UserController } from '../../controllers/user.controller';
 import SocketService from '../../socket/socket.service';
 import { MatchRepository } from '../../repository/match.repository.impl';
@@ -7,9 +8,13 @@ import { UserRepository } from '../../repository/user.repository.impl';
 import { IMatchRepository } from '../../repository/match.repository.interface';
 import { IUserRepository } from '../../repository/user.repository.interface';
 import { MatchService } from '../../service/match.service.impl';
+import { MatchStateService } from '../../service/match-state.service.impl';
+import { MatchHistoryService } from '../../service/match-history.service.impl';
 import { UserService } from '../../service/user.service.impl';
 import { AuthService } from '../../service/auth.service.impl';
 import { IMatchService } from '../../service/match.service.interface';
+import { IMatchStateService } from '../../service/match-state.service.interface';
+import { IMatchHistoryService } from '../../service/match-history.service.interface';
 import { IUserService } from '../../service/user.service.interface';
 import { IAuthService } from '../../service/auth.service.interface';
 import { WaitingQueueRepository } from '../../repository/waitingQueue.repository.impl';
@@ -43,6 +48,12 @@ class Container {
     const matchService: IMatchService = new MatchService(matchRepository, userService);
     this.services.set('MatchService', matchService);
 
+    const matchStateService: IMatchStateService = new MatchStateService(userService);
+    this.services.set('MatchStateService', matchStateService);
+
+    const matchHistoryService: IMatchHistoryService = new MatchHistoryService();
+    this.services.set('MatchHistoryService', matchHistoryService);
+
     const authService: IAuthService = new AuthService(userService);
     this.services.set('AuthService', authService);
 
@@ -59,8 +70,11 @@ class Container {
     const userControllerInstance = new UserController(userService);
     this.services.set('UserController', userControllerInstance);
 
-    const matchController = new MatchController(matchService, socketService, waitingQueueService, userService);
+    const matchController = new MatchController(matchService, socketService, matchStateService, matchHistoryService, userService);
     this.services.set('MatchController', matchController);
+
+    const waitingQueueController = new WaitingQueueController(waitingQueueService);
+    this.services.set('WaitingQueueController', waitingQueueController);
   }
 
   static getInstance(): Container {
