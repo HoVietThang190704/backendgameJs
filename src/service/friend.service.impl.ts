@@ -42,6 +42,35 @@ export class FriendService implements IFriendService {
     return this.friendRepository.areFriends(userId, friendId);
   }
 
+  async getFriendConnection(userId: string, friendId: string): Promise<any | null> {
+    return this.friendRepository.getFriendConnection(userId, friendId);
+  }
+
+  async getFriendStatus(userId: string, friendId: string): Promise<"accepted" | "pending" | "rejected" | "blocked" | "not_friends"> {
+    const connection = await this.friendRepository.getFriendConnection(userId, friendId);
+    if (!connection) {
+      return "not_friends";
+    }
+
+    if (connection.status === "accepted") {
+      return "accepted";
+    }
+
+    if (connection.status === "pending") {
+      return "pending";
+    }
+
+    if (connection.status === "rejected") {
+      return "rejected";
+    }
+
+    if (connection.status === "blocked") {
+      return "blocked";
+    }
+
+    return "not_friends";
+  }
+
   async getIncomingRequests(userId: string): Promise<FriendResponseDto[]> {
     const incoming = await this.friendRepository.getIncomingRequests(userId);
     return incoming.map((r) => r as unknown as FriendResponseDto);

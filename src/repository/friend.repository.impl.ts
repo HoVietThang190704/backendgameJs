@@ -53,6 +53,16 @@ export class FriendRepository implements IFriendRepository {
     return !!friendship;
   }
 
+  async getFriendConnection(userId: string, friendId: string): Promise<Friend | null> {
+    const friend = await FriendModel.findOne({
+      $or: [
+        { requesterId: userId, recipientId: friendId },
+        { requesterId: friendId, recipientId: userId },
+      ],
+    });
+    return friend;
+  }
+
   async getIncomingRequests(userId: string): Promise<Friend[]> {
     return await FriendModel.find({ recipientId: userId, status: "pending" });
   }

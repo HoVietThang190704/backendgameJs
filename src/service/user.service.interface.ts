@@ -8,4 +8,5 @@ export interface IUserService {
   setCurrentMatch(userId: string, matchId: string | null): Promise<void>;
   getTopUsers(limit: number): Promise<User[]>;
   getUserOwnRankPosition(userId: string): Promise<{ rank: number; position: number } | null>;
+  searchUsersByName(name: string, limit?: number): Promise<User[]>;
 }

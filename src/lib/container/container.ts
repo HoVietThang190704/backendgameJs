@@ -78,7 +78,7 @@ class Container {
     const socketService = SocketService.getInstance();
     this.services.set('SocketService', socketService);
 
-    const userControllerInstance = new UserController(userService);
+    const userControllerInstance = new UserController(userService, friendService);
     this.services.set('UserController', userControllerInstance);
 
     const matchController = new MatchController(matchService, socketService, matchStateService, matchHistoryService, userService);
