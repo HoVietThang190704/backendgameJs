@@ -8,8 +8,12 @@ export const swaggerOptions = {
     },
     servers: [
       {
+        url: "http://localhost:5000/api",
+        description: "Local development server (API prefix)",
+      },
+      {
         url: "http://localhost:5000",
-        description: "Local development server",
+        description: "Legacy root server",
       },
     ],
     components: {
@@ -103,6 +107,33 @@ export const swaggerOptions = {
             message: { type: "string", example: "Success" },
             success: { type: "boolean", example: true },
             data: { type: ["object", "array", "string", "number", "boolean", "null"] },
+          },
+        },
+        Friend: {
+          type: "object",
+          properties: {
+            requesterId: { type: "string", example: "642f1e7dc1d3d75b8f89c123" },
+            recipientId: { type: "string", example: "642f1e7dc1d3d75b8f89c456" },
+            status: { type: "string", enum: ["pending", "accepted", "rejected", "blocked"] },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
+        FriendRequest: {
+          type: "object",
+          properties: {
+            recipientId: { type: "string", example: "642f1e7dc1d3d75b8f89c456" },
+          },
+          required: ["recipientId"],
+        },
+        FriendResponse: {
+          type: "object",
+          properties: {
+            requesterId: { type: "string", example: "642f1e7dc1d3d75b8f89c123" },
+            recipientId: { type: "string", example: "642f1e7dc1d3d75b8f89c456" },
+            status: { type: "string", example: "pending" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
           },
         },
       },

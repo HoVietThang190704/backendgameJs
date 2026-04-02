@@ -1,18 +1,23 @@
 import { AuthController } from '../../controllers/auth.controller';
 import { MatchController } from '../../controllers/match.controller';
 import { WaitingQueueController } from '../../controllers/waitingQueue.controller';
+import { FriendController } from '../../controllers/friend.controller';
 import { UserController } from '../../controllers/user.controller';
 import SocketService from '../../socket/socket.service';
 import { MatchRepository } from '../../repository/match.repository.impl';
 import { UserRepository } from '../../repository/user.repository.impl';
+import { FriendRepository } from '../../repository/friend.repository.impl';
 import { IMatchRepository } from '../../repository/match.repository.interface';
 import { IUserRepository } from '../../repository/user.repository.interface';
+import { IFriendRepository } from '../../repository/friend.repository.interface';
 import { MatchService } from '../../service/match.service.impl';
 import { MatchStateService } from '../../service/match-state.service.impl';
 import { MatchHistoryService } from '../../service/match-history.service.impl';
 import { UserService } from '../../service/user.service.impl';
+import { FriendService } from '../../service/friend.service.impl';
 import { AuthService } from '../../service/auth.service.impl';
 import { IMatchService } from '../../service/match.service.interface';
+import { IFriendService } from '../../service/friend.service.interface';
 import { IMatchStateService } from '../../service/match-state.service.interface';
 import { IMatchHistoryService } from '../../service/match-history.service.interface';
 import { IUserService } from '../../service/user.service.interface';
@@ -41,6 +46,9 @@ class Container {
     const waitingQueueRepository: IWaitingQueueRepository = new WaitingQueueRepository();
     this.services.set('WaitingQueueRepository', waitingQueueRepository);
 
+    const friendRepository: IFriendRepository = new FriendRepository();
+    this.services.set('FriendRepository', friendRepository);
+
     // Register services
     const userService: IUserService = new UserService(userRepository);
     this.services.set('UserService', userService);
@@ -56,6 +64,9 @@ class Container {
 
     const authService: IAuthService = new AuthService(userService);
     this.services.set('AuthService', authService);
+
+    const friendService: IFriendService = new FriendService(friendRepository);
+    this.services.set('FriendService', friendService);
 
     const waitingQueueService: IWaitingQueueService = new WaitingQueueService(waitingQueueRepository, userService);
     this.services.set('WaitingQueueService', waitingQueueService);
@@ -75,6 +86,9 @@ class Container {
 
     const waitingQueueController = new WaitingQueueController(waitingQueueService);
     this.services.set('WaitingQueueController', waitingQueueController);
+
+    const friendController = new FriendController(friendService);
+    this.services.set('FriendController', friendController);
   }
 
   static getInstance(): Container {
