@@ -32,7 +32,9 @@ export const matchSchema = new Schema({
   turnTimeLimit: { type: Number, required: true, default: 30 },
   turnStartTime: { type: Date, required: false },
   currentTurn: { type: Schema.Types.ObjectId, ref: "User", required: false },
+  winnerId: { type: Schema.Types.ObjectId, ref: "User", required: false },
   startedAt: { type: Date, required: false },
+  finishedAt: { type: Date, required: false },
   moves: [
     {
       playerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -40,6 +42,13 @@ export const matchSchema = new Schema({
       y: { type: Number, required: true },
       action: { type: String, required: true },
       result: { type: String, required: true },
+      revealedCells: [
+        {
+          x: { type: Number, required: true },
+          y: { type: Number, required: true },
+          adjacentMines: { type: Number, required: true },
+        },
+      ],
       createdAt: { type: Date, default: Date.now }
     }
   ],
@@ -76,7 +85,9 @@ export type MatchInput = {
   }>;
   turnTimeLimit: number;
   currentTurn?: Types.ObjectId;
+  winnerId?: Types.ObjectId;
   startedAt?: Date;
+  finishedAt?: Date;
   turnStartTime?: Date;
   moves?: Array<{
     playerId: Types.ObjectId;
@@ -84,6 +95,11 @@ export type MatchInput = {
     y: number;
     action: string;
     result: string;
+    revealedCells?: Array<{
+      x: number;
+      y: number;
+      adjacentMines: number;
+    }>;
     createdAt?: Date;
   }>;
   lastTickAt?: Date;

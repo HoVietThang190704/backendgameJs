@@ -6,11 +6,35 @@ import { MatchDocument, MatchInput } from "../model/match";
 
 const DEFAULT_GAME_BOARD = { rows: 10, cols: 10, bombs: 20 };
 const DEFAULT_TURN_TIME_LIMIT = 30;
+const WIN_ELO_DELTA = 20;
+const LOSE_ELO_DELTA = -10;
 
 type BombCoordinate = {
   x: number;
   y: number;
 };
+
+function normalizeBombCoordinates(
+  bombs: Array<{ x: number; y: number }> | undefined,
+  rows: number,
+  cols: number,
+): BombCoordinate[] {
+  if (!Array.isArray(bombs)) {
+    return [];
+  }
+
+  const normalized = bombs
+    .filter((bomb) => Number.isFinite(bomb.x) && Number.isFinite(bomb.y))
+    .map((bomb) => ({ x: Number(bomb.x), y: Number(bomb.y) }))
+    .filter((bomb) => bomb.x >= 0 && bomb.x < rows && bomb.y >= 0 && bomb.y < cols);
+
+  const unique = new Map<string, BombCoordinate>();
+  normalized.forEach((bomb) => {
+    unique.set(`${bomb.x}:${bomb.y}`, bomb);
+  });
+
+  return Array.from(unique.values());
+}
 
 function generatePinCode(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
@@ -43,7 +67,17 @@ export class MatchService implements IMatchService {
   }
 
   async getActiveMatchForUser(userId: string): Promise<MatchDocument | null> {
-    return this.matchRepository.findActiveMatchByUserId(userId);
+    const activeMatch = await this.matchRepository.findActiveMatchByUserId(userId);
+    if (activeMatch) {
+      return activeMatch;
+    }
+
+    const user = await this.userService.getUserById(userId, "currentMatchId");
+    if (user?.currentMatchId) {
+      await this.userService.setCurrentMatch(userId, null);
+    }
+
+    return null;
   }
 
   async getMatchById(matchId: string): Promise<MatchDocument | null> {
@@ -78,7 +112,12 @@ export class MatchService implements IMatchService {
       },
     ];
 
-    return this.matchRepository.updateMatch(matchId, { players });
+    const updatedMatch = await this.matchRepository.updateMatch(matchId, { players });
+    if (updatedMatch?._id) {
+      await this.userService.setCurrentMatch(userId, updatedMatch._id.toString());
+    }
+
+    return updatedMatch;
   }
 
   async setPlayerReady(matchId: string, userId: string, ready: boolean): Promise<MatchDocument | null> {
@@ -139,8 +178,14 @@ export class MatchService implements IMatchService {
       throw new Error("Match game board is not configured");
     }
 
-    const player1Bombs = generateBombCoordinates(gameBoard.rows, gameBoard.cols, gameBoard.bombs);
-    const player2Bombs = generateBombCoordinates(gameBoard.rows, gameBoard.cols, gameBoard.bombs);
+    const existingPlayer1Bombs = normalizeBombCoordinates(match.player1Bombs, gameBoard.rows, gameBoard.cols);
+    const existingPlayer2Bombs = normalizeBombCoordinates(match.player2Bombs, gameBoard.rows, gameBoard.cols);
+    const player1Bombs = existingPlayer1Bombs.length > 0
+      ? existingPlayer1Bombs
+      : generateBombCoordinates(gameBoard.rows, gameBoard.cols, gameBoard.bombs);
+    const player2Bombs = existingPlayer2Bombs.length > 0
+      ? existingPlayer2Bombs
+      : generateBombCoordinates(gameBoard.rows, gameBoard.cols, gameBoard.bombs);
     const firstTurn = hostId || match.players[0]?.userId?.toString();
 
     if (!firstTurn) {
@@ -164,9 +209,39 @@ export class MatchService implements IMatchService {
     return this.matchRepository.updateMatch(matchId, { status });
   }
 
+  async setPlayerBombs(
+    matchId: string,
+    userId: string,
+    bombs: Array<{ x: number; y: number }>,
+  ): Promise<MatchDocument | null> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      throw new Error("Match not found");
+    }
+
+    const playerIndex = match.players.findIndex((player) => player.userId.toString() === userId);
+    if (playerIndex < 0) {
+      throw new Error("Player is not in this match");
+    }
+
+    const gameBoard = match.gameBoard;
+    if (!gameBoard) {
+      throw new Error("Match game board is not configured");
+    }
+
+    const normalizedBombs = normalizeBombCoordinates(bombs, gameBoard.rows, gameBoard.cols);
+    const limitedBombs = normalizedBombs.slice(0, gameBoard.bombs);
+
+    if (playerIndex === 0) {
+      return this.matchRepository.updateMatch(matchId, { player1Bombs: limitedBombs });
+    }
+
+    return this.matchRepository.updateMatch(matchId, { player2Bombs: limitedBombs });
+  }
+
   async addMove(
     matchId: string,
-    move: { playerId: string; x: number; y: number; action: string; result: string },
+    move: { playerId: string; x: number; y: number; action: string; result: string; revealedCells?: Array<{ x: number; y: number; adjacentMines: number }> },
   ): Promise<MatchDocument | null> {
     const match = await this.getMatchById(matchId);
     if (!match) {
@@ -179,11 +254,52 @@ export class MatchService implements IMatchService {
       y: move.y,
       action: move.action,
       result: move.result,
+      revealedCells: move.revealedCells,
       createdAt: new Date(),
     };
 
     const moves = match.moves ? [...match.moves, newMove] : [newMove];
     return this.matchRepository.updateMatch(matchId, { moves });
+  }
+
+  async clearCurrentMatchForPlayers(matchId: string): Promise<void> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      return;
+    }
+
+    await Promise.all(
+      match.players.map((player) => this.userService.setCurrentMatch(player.userId.toString(), null)),
+    );
+  }
+
+  async finalizeMatch(matchId: string, winnerId: string, loserId: string): Promise<{ winnerEloDelta: number; loserEloDelta: number }> {
+    const match = await this.getMatchById(matchId);
+    if (!match) {
+      throw new Error("Match not found");
+    }
+
+    if (match.status !== "finished") {
+      await this.matchRepository.updateMatch(matchId, {
+        status: "finished",
+        winnerId: new Types.ObjectId(winnerId),
+        finishedAt: new Date(),
+        currentTurn: undefined,
+        turnStartTime: undefined,
+      });
+
+      await Promise.all([
+        this.userService.applyGameResult(winnerId, WIN_ELO_DELTA, true),
+        this.userService.applyGameResult(loserId, LOSE_ELO_DELTA, false),
+      ]);
+    }
+
+    await this.clearCurrentMatchForPlayers(matchId);
+
+    return {
+      winnerEloDelta: WIN_ELO_DELTA,
+      loserEloDelta: LOSE_ELO_DELTA,
+    };
   }
 
   async leaveMatch(matchId: string, userId: string): Promise<MatchDocument | null> {
@@ -204,6 +320,7 @@ export class MatchService implements IMatchService {
 
     // If no player remains, delete match
     if (remainingPlayers.length === 0) {
+      await this.userService.setCurrentMatch(userId, null);
       await this.matchRepository.deleteMatch(matchId);
       return null;
     }
@@ -227,6 +344,10 @@ export class MatchService implements IMatchService {
     }
 
     const updatedMatch = await this.matchRepository.updateMatch(matchId, updateData);
+
+    if (match.status === "playing") {
+      await this.clearCurrentMatchForPlayers(matchId);
+    }
 
     return updatedMatch;
   }

@@ -13,6 +13,7 @@ import { IFriendRepository } from '../../repository/friend.repository.interface'
 import { MatchService } from '../../service/match.service.impl';
 import { MatchStateService } from '../../service/match-state.service.impl';
 import { MatchHistoryService } from '../../service/match-history.service.impl';
+import { GameLogicService } from '../../service/game-logic.service.impl';
 import { UserService } from '../../service/user.service.impl';
 import { FriendService } from '../../service/friend.service.impl';
 import { AuthService } from '../../service/auth.service.impl';
@@ -56,6 +57,9 @@ class Container {
     const matchService: IMatchService = new MatchService(matchRepository, userService);
     this.services.set('MatchService', matchService);
 
+    const gameLogicService = new GameLogicService(matchRepository, matchService);
+    this.services.set('GameLogicService', gameLogicService);
+
     const matchStateService: IMatchStateService = new MatchStateService(userService);
     this.services.set('MatchStateService', matchStateService);
 
@@ -68,7 +72,7 @@ class Container {
     const friendService: IFriendService = new FriendService(friendRepository);
     this.services.set('FriendService', friendService);
 
-    const waitingQueueService: IWaitingQueueService = new WaitingQueueService(waitingQueueRepository, userService);
+    const waitingQueueService: IWaitingQueueService = new WaitingQueueService(waitingQueueRepository, userService, matchService);
     this.services.set('WaitingQueueService', waitingQueueService);
 
     // Register controllers

@@ -26,6 +26,8 @@ export default function setupRoutes(): Router {
     router.use('/user', createUserRoutes(userController));
     router.use('/matches', createMatchRoutes(matchController));
     router.use('/matches', createWaitingQueueRoutes(waitingQueueController));
+    router.use('/match', createMatchRoutes(matchController));
+    router.use('/match', createWaitingQueueRoutes(waitingQueueController));
     router.use('/friends', createFriendRoutes(friendController));
 
     router.get('/match-history', authMiddleware, (req, res) => matchController.getMatchHistory(req, res));

@@ -23,6 +23,28 @@ export class UserRepository implements IUserRepository {
     await UserModel.findByIdAndUpdate(userId, { currentMatchId: matchId });
   }
 
+  async applyGameResult(userId: string, rankDelta: number, isWin: boolean): Promise<void> {
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return;
+    }
+
+    const nextWins = (user.wins ?? 0) + (isWin ? 1 : 0);
+    const nextLosses = (user.losses ?? 0) + (isWin ? 0 : 1);
+    const nextTotalMatches = nextWins + nextLosses;
+    const nextWinRate = nextTotalMatches > 0 ? Number(((nextWins / nextTotalMatches) * 100).toFixed(1)) : 0;
+    const nextRank = Math.max(0, (user.rank ?? 1000) + rankDelta);
+
+    user.wins = nextWins;
+    user.losses = nextLosses;
+    user.totalMatches = nextTotalMatches;
+    user.winRate = nextWinRate;
+    user.rank = nextRank;
+    user.modified = { time: new Date() };
+
+    await user.save();
+  }
+
   async getTopUsers(limit: number): Promise<User[]> {
     return await UserModel.find({}, { email: 0, password: 0 }).sort({ rank: -1 }).limit(limit).lean();
   }

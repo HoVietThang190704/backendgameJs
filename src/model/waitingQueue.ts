@@ -25,4 +25,6 @@ export type WaitingQueueInput = {
   preferences: {
     boardSize: string;
   };
+  matchedWith?: Types.ObjectId;
+  matchId?: Types.ObjectId;
 };

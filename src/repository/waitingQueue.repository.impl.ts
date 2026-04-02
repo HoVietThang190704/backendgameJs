@@ -12,8 +12,21 @@ export class WaitingQueueRepository implements IWaitingQueueRepository {
     return await WaitingQueueModel.findOne({ userId: userObjectId, status }).sort({ createdAt: -1 });
   }
 
+  async findOldestWaitingOpponent(userId: string, boardSize: string): Promise<WaitingQueueDocument | null> {
+    const userObjectId = new Types.ObjectId(userId);
+    return await WaitingQueueModel.findOne({
+      status: "waiting",
+      userId: { $ne: userObjectId },
+      "preferences.boardSize": boardSize,
+    }).sort({ joinedAt: 1, createdAt: 1 });
+  }
+
   async updateStatus(id: string, status: string): Promise<WaitingQueueDocument | null> {
     return await WaitingQueueModel.findByIdAndUpdate(id, { status }, { new: true });
+  }
+
+  async updateQueue(id: string, update: Partial<WaitingQueueInput>): Promise<WaitingQueueDocument | null> {
+    return await WaitingQueueModel.findByIdAndUpdate(id, update, { new: true });
   }
 
   async deleteByUserId(userId: string): Promise<void> {
