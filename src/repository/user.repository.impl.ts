@@ -30,4 +30,14 @@ export class UserRepository implements IUserRepository {
   async countUsersWithHigherRank(rank: number): Promise<number> {
     return await UserModel.countDocuments({ rank: { $gt: rank } });
   }
+
+  async searchUsersByName(name: string, limit: number = 20): Promise<User[]> {
+    const query = {
+      $or: [
+        { name: { $regex: name, $options: 'i' } },
+        { username: { $regex: name, $options: 'i' } },
+      ],
+    };
+    return await UserModel.find(query, { email: 0, password: 0 }).limit(limit).lean();
+  }
 }

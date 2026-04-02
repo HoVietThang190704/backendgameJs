@@ -1,13 +1,16 @@
 import { Request, Response } from 'express';
 import { IUserService } from '../service/user.service.interface';
+import { IFriendService } from '../service/friend.service.interface';
 import { BaseResponse } from '../lib/baseresponse';
 import { User } from '../model/user';
 
 export class UserController {
   private readonly userService: IUserService;
+  private readonly friendService: IFriendService;
 
-  constructor(userService: IUserService) {
+  constructor(userService: IUserService, friendService: IFriendService) {
     this.userService = userService;
+    this.friendService = friendService;
   }
 
   async getUserByEmail(req: Request, res: Response): Promise<void> {
@@ -58,6 +61,71 @@ export class UserController {
       }
     } catch (error) {
       console.error("Error retrieving user profile:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  async searchUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const query = req.query.name as string;
+      if (!query || !query.trim()) {
+        res.status(400).json({ message: "Query parameter 'name' is required" });
+        return;
+      }
+
+      const users = await this.userService.searchUsersByName(query, 20);
+      const currentUserId = req.userId;
+
+      const usersWithStatus = await Promise.all(
+        users.map(async (user) => {
+          const searchedUserId = (user as unknown as { _id: string })._id?.toString();
+          let relationshipStatus: "accepted" | "pending" | "rejected" | "blocked" | "not_friends" = "not_friends";
+          let isFriend = false;
+          let isPendingOutgoing = false;
+          let isPendingIncoming = false;
+          let isBlocked = false;
+
+          if (currentUserId && searchedUserId) {
+            const connection = await this.friendService.getFriendStatus(currentUserId, searchedUserId);
+            relationshipStatus = connection;
+
+            if (connection === "accepted") {
+              isFriend = true;
+            } else if (connection === "blocked") {
+              isBlocked = true;
+            } else if (connection === "pending") {
+              // mark outgoing/incoming by direction in FriendService helper
+              const friendConnection = await this.friendService.getFriendConnection(currentUserId, searchedUserId);
+              if (friendConnection) {
+                if (friendConnection.requesterId.toString() === currentUserId) {
+                  isPendingOutgoing = true;
+                } else {
+                  isPendingIncoming = true;
+                }
+              }
+            }
+          }
+
+          return {
+            ...user,
+            relationshipStatus,
+            isFriend,
+            isBlocked,
+            isPendingOutgoing,
+            isPendingIncoming,
+          };
+        })
+      );
+
+      const response = new BaseResponse<typeof usersWithStatus>()
+        .setResponse(200)
+        .setSuccess(true)
+        .setMessage("Users found")
+        .setData(usersWithStatus)
+        .build();
+      res.status(200).json(response);
+    } catch (error) {
+      console.error("Error searching users:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }

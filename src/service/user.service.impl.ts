@@ -42,4 +42,8 @@ export class UserService implements IUserService {
       position: higher + 1,
     };
   }
+
+  async searchUsersByName(name: string, limit: number = 20): Promise<User[]> {
+    return await this.userRepository.searchUsersByName(name, limit);
+  }
 }
