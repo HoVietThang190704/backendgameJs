@@ -153,6 +153,43 @@ export class MatchController {
     }
   }
 
+  async getActiveMatch(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      const activeMatch = await this.matchService.getActiveMatchForUser(userId);
+      const data = activeMatch
+        ? {
+            matchId: activeMatch._id?.toString() ?? null,
+            status: activeMatch.status,
+            currentPlayerId: activeMatch.currentTurn?.toString() ?? null,
+            playerCount: activeMatch.players.length,
+          }
+        : {
+            matchId: null,
+            status: "none",
+            currentPlayerId: null,
+            playerCount: 0,
+          };
+
+      const response = new BaseResponse<typeof data>()
+        .setResponse(200)
+        .setMessage("Active match fetched")
+        .setSuccess(true)
+        .setData(data)
+        .build();
+
+      res.status(200).json(response);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to get active match";
+      res.status(400).json({ message });
+    }
+  }
+
   async leaveMatch(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.userId;

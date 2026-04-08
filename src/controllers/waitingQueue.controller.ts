@@ -17,11 +17,7 @@ export class WaitingQueueController {
         return;
       }
 
-      const { boardSize } = req.body;
-      if (!boardSize) {
-        res.status(400).json({ message: "boardSize is required" });
-        return;
-      }
+      const boardSize = req.body?.boardSize || "medium";
 
       const queueRecord = await this.waitingQueueService.addToQueue(userId, boardSize);
 

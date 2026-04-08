@@ -69,6 +69,8 @@ export function createMatchRoutes(matchController: MatchController): Router {
    */
   router.post("/join", authMiddleware, (req, res) => matchController.joinMatch(req, res));
 
+  router.get("/active", authMiddleware, (req, res) => matchController.getActiveMatch(req, res));
+
   /**
    * @openapi
    * /api/matches/{id}:

@@ -26,6 +26,10 @@ export class UserService implements IUserService {
     await this.userRepository.setCurrentMatch(userId, matchId);
   }
 
+  async applyGameResult(userId: string, rankDelta: number, isWin: boolean): Promise<void> {
+    await this.userRepository.applyGameResult(userId, rankDelta, isWin);
+  }
+
   async getTopUsers(limit: number): Promise<User[]> {
     return await this.userRepository.getTopUsers(limit);
   }

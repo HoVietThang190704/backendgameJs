@@ -6,6 +6,7 @@ export interface IUserRepository {
   getUserByEmail (email: string): Promise<User | null>;
   getUserById (id: string, projection?: string): Promise<User | null>;
   setCurrentMatch(userId: string, matchId: string | null): Promise<void>;
+  applyGameResult(userId: string, rankDelta: number, isWin: boolean): Promise<void>;
   getTopUsers(limit: number): Promise<User[]>;
   countUsersWithHigherRank(rank: number): Promise<number>;
   searchUsersByName(name: string, limit?: number): Promise<User[]>;
